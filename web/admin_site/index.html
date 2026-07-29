@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="it">
+ <head>
+  <!-- 
+  ========================================================================
+  VENDING MACHINE - ADMIN DASHBOARD
+  ========================================================================
+  - Fast Navigation: I avoided page reloads. The different sections 
+    (Dashboard, Machines, etc.) are dynamically shown or hidden using 
+    JavaScript to toggle CSS classes (.screen.active).
+  - Responsive Interface: The layout is built to adapt from mobile 
+    to desktop.
+  - Style & Colors: Centralized visual theme management via CSS 
+    variables (:root) to ensure high readability and brand consistency.
+  - Modals: Popup windows are pre-loaded in the HTML and shown only 
+    when needed, making the interface feel instant and smooth.
+  ========================================================================
+  -->
+  <script src="/_sdk/telemetry_sdk.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vending Pop Manager</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/editing_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black:wght@400&amp;family=Raleway:wght@500;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#151515; --night:#163329; --paper:#fffaf0; --cream:#f6efe1;
+      --yellow:#ffe000; --green:#23c963; --red:#ff2f2f; --orange:#ff9b1f; --blue:#2bc8ee;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Raleway',sans-serif;color:var(--ink)}
+    .display{font-family:'Archivo Black',sans-serif;letter-spacing:-.05em}
+    .soft-grid{
+      background-image:linear-gradient(rgba(21,21,21,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(21,21,21,.05) 1px,transparent 1px);
+      background-size:28px 28px;
+    }
+    .panel{border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink)}
+    .panel-soft{border:2px solid var(--ink);box-shadow:4px 4px 0 rgba(21,21,21,.18)}
+    .focusable:focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+    .screen{display:none}.screen.active{display:block;animation:in .25s ease both}
+    @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .nav-btn.active{background:var(--yellow);color:var(--ink)}
+    .machine-card,.product-card{transition:.18s ease}
+    .machine-card:hover,.product-card:hover{transform:translateY(-3px)}
+    .modal-backdrop{background:rgba(0,0,0,.62)}
+    .toast{transform:translateY(10px);opacity:0;transition:.25s}.toast.show{transform:translateY(0);opacity:1}
+    .mobile-menu-open{display:grid!important}
+    .status-strip{font-family:'Archivo Black',sans-serif;letter-spacing:-.02em}
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
+ </head>
+ <body data-template-id="__page-root" class="w-full min-h-screen">
+  <div class="w-full min-h-screen soft-grid p-3 md:p-5">
+   <div class="w-full max-w-[1480px] mx-auto grid lg:grid-cols-[240px_minmax(0,1fr)] gap-5">
+    <aside data-template-id="sidebar-panel" class="canva-sidebar hidden lg:flex bg-[#163329] text-white panel p-3 flex-col max-h-[calc(100*min(var(--vh,1vh),1vh)-1.5rem)] overflow-y-auto">
+     <header class="pb-3 border-b border-white/20 flex-shrink-0">
+      <p data-template-id="brand-kicker" class="canva-text text-[9px] uppercase tracking-[.22em] font-extrabold mb-1">Dashboard operativa</p>
+      <h1 data-template-id="brand-title" class="canva-text display text-xl leading-[0.88] whitespace-pre-line">VENDING POP</h1>
+      <div class="mt-2 text-2xl">
+       🥤
+      </div>
+     </header>
+     <nav class="mt-3 space-y-2 flex-shrink-0" aria-label="Navigazione principale"><button class="nav-btn active focusable w-full rounded-lg px-3 py-2 flex items-center gap-2 text-left font-extrabold uppercase text-xs bg-white/10" data-screen="dashboard"><i data-lucide="layout-dashboard" class="w-4 h-4 flex-shrink-0"></i><span>Dashboard</span></button> <button class="nav-btn focusable w-full rounded-lg px-3 py-2 flex items-center gap-2 text-left font-extrabold uppercase text-xs bg-white/10" data-screen="machines"><i data-lucide="store" class="w-4 h-4 flex-shrink-0"></i><span>Macchinette</span></button> <button class="nav-btn focusable w-full rounded-lg px-3 py-2 flex items-center gap-2 text-left font-extrabold uppercase text-xs bg-white/10" data-screen="detail"><i data-lucide="panels-top-left" class="w-4 h-4 flex-shrink-0"></i><span>Dettaglio</span></button> <button class="nav-btn focusable w-full rounded-lg px-3 py-2 flex items-center gap-2 text-left font-extrabold uppercase text-xs bg-white/10" data-screen="expiring"><i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i><span>Scadenze</span></button>
+     </nav><button id="add-machine-btn" data-template-id="add-machine-button" class="canva-button focusable mt-3 bg-[#ffe000] text-[#151515] rounded-lg px-3 py-2 font-black uppercase text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="plus" class="w-3 h-3"></i><span>Aggiungi</span></button>
+     <div class="mt-3 min-h-0 flex flex-col flex-1 overflow-y-auto">
+      <div class="border border-white/20 rounded-xl p-3 flex flex-col">
+       <p class="canva-text text-[10px] uppercase tracking-[.18em] font-extrabold flex-shrink-0">Da controllare</p>
+       <div id="sidebar-alerts-list" class="space-y-2 mt-2 flex-1 overflow-y-auto min-h-0"></div>
+       <p id="sidebar-no-alerts" class="text-[11px] mt-2 leading-snug text-white/70 flex-shrink-0">Nessun alert.</p>
+      </div>
+     </div>
+    </aside>
+    <div data-template-id="mobile-header" class="canva-header lg:hidden bg-[#163329] text-white panel p-3">
+     <div class="flex justify-between items-center gap-2">
+      <div class="min-w-0">
+       <p class="canva-text text-[8px] uppercase tracking-[.18em] font-extrabold">Dashboard operativa</p>
+       <h1 class="canva-text display text-lg">VENDING POP</h1>
+      </div><button id="mobile-menu-btn" class="focusable bg-[#ffe000] text-[#151515] rounded-lg w-10 h-10 flex items-center justify-center flex-shrink-0"><i data-lucide="menu" class="w-4 h-4"></i></button>
+     </div>
+     <div id="mobile-menu" class="hidden grid-cols-2 gap-2 mt-3"><button class="nav-btn active focusable bg-white/10 rounded-lg px-2 py-2 flex gap-2 items-center uppercase font-black text-xs" data-screen="dashboard"><i data-lucide="layout-dashboard" class="w-3 h-3"></i><span>Dashboard</span></button> <button class="nav-btn focusable bg-white/10 rounded-lg px-2 py-2 flex gap-2 items-center uppercase font-black text-xs" data-screen="machines"><i data-lucide="store" class="w-3 h-3"></i><span>Macchine</span></button> <button class="nav-btn focusable bg-white/10 rounded-lg px-2 py-2 flex gap-2 items-center uppercase font-black text-xs" data-screen="detail"><i data-lucide="panels-top-left" class="w-3 h-3"></i><span>Dettaglio</span></button> <button class="nav-btn focusable bg-white/10 rounded-lg px-2 py-2 flex gap-2 items-center uppercase font-black text-xs" data-screen="expiring"><i data-lucide="alert-circle" class="w-3 h-3"></i><span>Scadenze</span></button>
+     </div>
+    </div>
+    <main class="bg-[#fffaf0] panel p-2 md:p-3 min-h-[calc(100*min(var(--vh,1vh),1vh)-2.5rem)] overflow-y-auto flex flex-col">
+     <section id="screen-dashboard" class="screen active">
+      <header data-template-id="dashboard-hero" class="canva-section rounded-lg bg-[#f6efe1] p-2 md:p-3 flex-shrink-0">
+       <p data-template-id="dashboard-eyebrow" class="canva-text text-[10px] uppercase tracking-[.22em] font-extrabold mb-0.5">Controllo rapido</p>
+       <h2 data-template-id="dashboard-title" class="canva-text display text-2xl md:text-3xl leading-[.88] whitespace-pre-line">TUTTO SOTTO CONTROLLO</h2>
+       <p data-template-id="dashboard-subtitle" class="canva-text mt-1 max-w-2xl text-xs leading-4">Monitora la rete, individua le priorità e gestisci ogni distributore.</p>
+      </header>
+      
+      <section class="mt-2 flex-shrink-0">
+       <div class="flex justify-between items-center mb-1">
+        <h2 data-template-id="dashboard-latest-title" class="canva-text display text-lg md:text-xl">PANORAMICA</h2>
+       </div>
+      </section>
+     
+      <section class="mt-2 flex-shrink-0">
+       <h2 data-template-id="dashboard-kpi-title" class="canva-text display text-xl md:text-2xl mb-1"></h2>
+       <div class="grid grid-cols-2 gap-1.5 md:gap-2">
+        <article class="bg-[#2bc8ee] p-2 rounded-lg panel-soft">
+         <p class="text-[9px] uppercase tracking-[.16em] font-black">Macchinette</p>
+         <p id="kpi-machines" class="display text-2xl md:text-3xl mt-0.5">0</p>
+         <p class="text-[10px] font-bold">totale</p>
+        </article>
+        <article class="bg-[#ff2f2f] text-white p-2 rounded-lg panel-soft">
+         <p class="text-[9px] uppercase tracking-[.16em] font-black">Alert</p>
+         <p id="kpi-alerts" class="display text-2xl md:text-3xl mt-0.5">0</p>
+         <p class="text-[10px] font-bold">critico</p>
+        </article>
+       </div>
+      </section>
+      <section class="mt-2 flex-shrink-0">
+       <article data-template-id="vending-pop-card" class="canva-card bg-white rounded-lg p-3 panel-soft">
+        <div class="flex justify-between items-center mb-2">
+         <h2 class="canva-text display text-lg md:text-xl uppercase font-black">Vending Pop</h2><span id="vending-pop-percent" class="display text-lg font-black">0%</span>
+        </div>
+        <div class="w-full h-4 bg-[#f6efe1] rounded border-2 border-black overflow-hidden flex">
+         <div id="vending-pop-bar" class="bg-[#23c963] transition-all ease-out" style="width:0%"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-3">
+         <div class="text-center">
+          <p class="text-[10px] uppercase font-black tracking-[.12em]">Attive</p>
+          <p id="vending-pop-att" class="display text-xl font-black">0</p>
+         </div>
+         <div class="text-center">
+          <p class="text-[10px] uppercase font-black tracking-[.12em]">Offline</p>
+          <p id="vending-pop-off" class="display text-xl font-black">0</p>
+         </div>
+         <div class="text-center">
+          <p class="text-[10px] uppercase font-black tracking-[.12em]">Totali Incassi</p>
+          <p id="vending-pop-euro" class="display text-lg font-black">€0</p>
+         </div>
+        </div>
+       </article>
+      </section>
+      <section class="mt-2 flex-shrink-0">
+       <div class="flex justify-between items-center mb-1">
+        <h2 data-template-id="dashboard-latest-title" class="canva-text display text-lg md:text-xl">ULTIME</h2><button data-go-machines class="focusable bg-[#ffe000] rounded-full px-2 py-0.5 text-[10px] font-black uppercase flex gap-1 items-center flex-shrink-0"><span>Tutte</span><i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></button>
+       </div>
+       <div id="latest-machines" class="grid md:grid-cols-2 xl:grid-cols-3 gap-1.5 md:gap-2"></div>
+      </section>
+     </section>
+     <section id="screen-machines" class="screen">
+      <header data-template-id="machines-header" class="canva-section rounded-lg bg-[#f6efe1] p-2 md:p-3 flex-shrink-0">
+       <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2">
+        <div>
+         <p data-template-id="machines-eyebrow" class="canva-text text-[10px] uppercase tracking-[.22em] font-extrabold mb-0.5">Archivio rete</p>
+         <h2 data-template-id="machines-title" class="canva-text display text-xl md:text-2xl leading-[.88] whitespace-pre-line">LE TUE MACCHINETTE</h2>
+         <p data-template-id="machines-subtitle" class="canva-text mt-1 max-w-2xl text-xs leading-4">Cerca, filtra e apri rapidamente ogni distributore.</p>
+        </div><button id="add-machine-btn-2" data-template-id="add-machine-button-secondary" class="canva-button focusable bg-[#ffe000] rounded-lg px-2 py-1 font-black uppercase text-[10px] flex gap-1 items-center justify-center flex-shrink-0"><i data-lucide="plus" class="w-3 h-3"></i><span>Aggiungi</span></button>
+       </div>
+      </header>
+      <div class="mt-2 grid md:grid-cols-[1fr_100px] gap-1.5 md:gap-2 flex-shrink-0">
+       <div class="relative"><label for="machine-search" class="sr-only">Cerca macchinette</label> <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2"></i> <input id="machine-search" data-template-id="search-placeholder" class="canva-input focusable w-full bg-white border-2 border-[#151515] rounded-lg pl-8 pr-2 py-1.5 font-bold text-xs text-black" type="text" placeholder="Cerca per nome o via...">
+       </div>
+       <div><label for="machine-filter" class="sr-only">Filtra stato</label> <select id="machine-filter" class="focusable w-full bg-white border-2 border-[#151515] rounded-lg px-2 py-1.5 font-bold text-xs"> <option value="all">Tutte</option> <option value="on">Online</option> <option value="off">Offline</option> <option value="alert">Alert</option> </select>
+       </div>
+      </div>
+      <div id="machines-empty" class="hidden py-4 text-center">
+       <h2 data-template-id="empty-title" class="canva-text font-black text-lg"></h2>
+       <p data-template-id="empty-copy" class="canva-text mt-1 max-w-md mx-auto leading-4 text-xs"></p>
+      </div>
+      <div id="machines-grid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-1.5 md:gap-2 mt-2 min-h-0" style="row-gap: 2.5rem;"></div>
+     </section>
+     <section id="screen-expiring" class="screen">
+      <header data-template-id="expiring-header" class="canva-section rounded-lg bg-[#ff2f2f] p-2 md:p-3 flex-shrink-0">
+       <div class="flex items-center gap-2 mb-1"><i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+        <h2 data-template-id="expiring-title" class="canva-text display text-2xl md:text-3xl leading-[.88]">SCADENZE</h2>
+       </div>
+       <p data-template-id="expiring-subtitle" class="canva-text text-xs leading-4 text-white/90">Prodotti in scadenza o scaduti nella tua rete.</p>
+      </header>
+      <div id="expiring-empty" class="hidden mt-4 py-8 text-center">
+       <p class="text-lg font-black">✓</p>
+       <p data-template-id="expiring-empty-text" class="canva-text mt-2 text-sm font-black"></p>
+      </div>
+      <div id="expiring-list" class="mt-2 space-y-1.5 flex-shrink-0"></div>
+     </section>
+     <section id="screen-detail" class="screen">
+      <div id="detail-empty" class="min-h-[200px] flex items-center justify-center text-center">
+       <div>
+        <h2 data-template-id="detail-empty-title" class="canva-text display text-xl md:text-2xl whitespace-pre-line"></h2>
+        <p data-template-id="detail-empty-copy" class="canva-text mt-1 max-w-md leading-4 text-xs"></p><button data-go-machines class="focusable mt-2 bg-[#ffe000] rounded-lg px-2 py-1 uppercase font-black text-[10px] inline-flex gap-1 items-center"><span>Vai</span><i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></button>
+       </div>
+      </div>
+      <div id="detail-content" class="hidden overflow-y-auto flex flex-col min-h-0">
+       <header class="rounded-lg bg-[#f6efe1] p-2 flex-shrink-0">
+        <div class="flex flex-col lg:flex-row lg:justify-between gap-2">
+         <div>
+          <div class="flex flex-wrap gap-1 mb-1 items-center"><span id="detail-status-pill" class="px-1.5 py-0.5 text-[9px] font-black uppercase rounded"></span> <span id="detail-zone" class="font-bold flex gap-1 items-center text-xs"><i data-lucide="map-pin" class="w-3 h-3 flex-shrink-0"></i><span></span></span> <span id="detail-maintenance-header" class="font-bold flex gap-1 items-center text-[9px]"><i data-lucide="wrench" class="w-2.5 h-2.5 flex-shrink-0"></i><span></span></span>
+          </div>
+          <h2 id="detail-name" class="display text-lg md:text-xl leading-[.88] uppercase"></h2>
+         </div>
+         <div class="flex gap-1.5 flex-wrap flex-shrink-0"><button id="edit-machine-btn" data-template-id="edit-machine-button" class="canva-button focusable bg-[#2bc8ee] rounded-lg px-2 py-1 font-black uppercase text-[10px] flex gap-1 items-center"><i data-lucide="pencil" class="w-2.5 h-2.5"></i><span>Modifica</span></button> <button id="delete-machine-btn" data-template-id="delete-machine-button" class="canva-button focusable bg-[#ff2f2f] text-white rounded-lg px-2 py-1 font-black uppercase text-[10px] flex gap-1 items-center"><i data-lucide="trash-2" class="w-2.5 h-2.5"></i><span>Elimina</span></button>
+         </div>
+        </div>
+       </header>
+       <section class="mt-4 flex-shrink-0">
+        <h2 data-template-id="overview-title" class="canva-text display text-lg md:text-xl mb-1">PANORAMICA</h2>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-1.5 md:gap-2">
+         <article class="bg-white rounded-lg p-2 panel-soft">
+          <p class="text-[9px] uppercase tracking-[.16em] font-black">Incassi</p>
+          <p id="revenue-value" class="display text-2xl md:text-3xl mt-0.5">€0</p>
+         </article>
+         <article class="bg-white rounded-lg p-2 panel-soft">
+          <p class="text-[9px] uppercase tracking-[.16em] font-black">Prodotti</p>
+          <p id="products-count-value" class="display text-2xl md:text-3xl mt-0.5">0/6</p>
+         </article>
+         <article class="bg-white rounded-lg p-2 panel-soft">
+          <p class="text-[9px] uppercase tracking-[.16em] font-black">Disponibili</p>
+          <p id="available-count-value" class="display text-2xl md:text-3xl mt-0.5">0</p>
+         </article>
+         <article class="bg-white rounded-lg p-2 panel-soft">
+          <p class="text-[9px] uppercase tracking-[.16em] font-black">Alert</p>
+          <p id="alert-count-value" class="display text-2xl md:text-3xl mt-0.5">0</p>
+         </article>
+        </div>
+       </section>
+       <section class="mt-4 min-h-0 flex-1 flex flex-col">
+        <div class="flex items-center gap-1 mb-1 flex-shrink-0"><span class="w-3 h-3 rounded-full border-2 border-[#23c963] flex items-center justify-center text-[10px] text-[#23c963] flex-shrink-0">✓</span>
+         <h2 data-template-id="products-title" class="canva-text display text-lg md:text-xl">PRODOTTI</h2>
+        </div>
+        <div id="products-grid" class="grid grid-cols-3 gap-1.5 md:gap-2 min-h-0" style="row-gap: 3rem;"></div>
+       </section>
+      </div>
+     </section>
+    </main>
+   </div>
+  </div>
+  <div id="machine-modal" class="hidden fixed inset-0 z-50 modal-backdrop p-1 items-center justify-center">
+   <div class="w-full max-w-sm bg-[#fffaf0] rounded-lg p-2 md:p-3 panel max-h-[calc(100*min(var(--vh,1vh),1vh)-1rem)] overflow-y-auto">
+    <div class="flex justify-between items-start border-b-2 border-black/10 pb-2">
+     <h2 class="canva-text display text-lg md:text-xl">MACCHINETTA</h2><button type="button" class="focusable close-machine-modal w-6 h-6 rounded-full bg-white border-2 border-black flex items-center justify-center flex-shrink-0"><i data-lucide="x" class="w-3 h-3"></i></button>
+    </div>
+    <form id="machine-form" class="grid md:grid-cols-2 gap-2 mt-2">
+     <div>
+      <label for="machine-name" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Nome</label><input id="machine-name" required class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="text">
+     </div>
+     <div>
+      <label for="machine-zone" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Via</label><input id="machine-zone" required class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="text">
+     </div>
+     <div>
+      <label for="machine-status" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Stato</label><select id="machine-status" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black"><option value="true">Online</option><option value="false">Offline</option></select>
+     </div>
+     <div>
+      <label for="machine-revenue" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Incassi €</label><input id="machine-revenue" min="0" step="0.01" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="number">
+     </div>
+     <div>
+      <label for="machine-maintenance" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Manutenz.</label><input id="machine-maintenance" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="date">
+     </div>
+     <div class="md:col-span-2">
+      <label for="machine-notes" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Note</label><textarea id="machine-notes" rows="2" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black resize-none"></textarea>
+     </div>
+     <div class="md:col-span-2 flex justify-end gap-1.5 mt-1">
+      <button type="button" class="close-machine-modal focusable bg-white border-2 border-black rounded-lg px-2 py-1 font-black uppercase text-[10px]">Annulla</button><button id="save-machine-btn" type="submit" class="focusable bg-[#ffe000] rounded-lg px-2 py-1 font-black uppercase text-[10px]">Salva</button>
+     </div>
+    </form>
+   </div>
+  </div>
+  <div id="product-modal" class="hidden fixed inset-0 z-50 modal-backdrop p-1 items-center justify-center">
+   <div class="w-full max-w-xs bg-[#fffaf0] rounded-lg p-2 md:p-3 panel max-h-[calc(100*min(var(--vh,1vh),1vh)-1rem)] overflow-y-auto">
+    <div class="flex justify-between items-start border-b-2 border-black/10 pb-2">
+     <h2 class="canva-text display text-lg md:text-xl">PRODOTTO</h2><button type="button" class="focusable close-product-modal w-6 h-6 rounded-full bg-white border-2 border-black flex items-center justify-center flex-shrink-0"><i data-lucide="x" class="w-3 h-3"></i></button>
+    </div>
+    <form id="product-form" class="grid grid-cols-2 gap-2 mt-2">
+     <div class="col-span-2">
+      <label for="product-name" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Nome prodotto</label><input id="product-name" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="text">
+     </div>
+     <div>
+      <label for="product-price" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Prezzo €</label><input id="product-price" min="0" step="0.01" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="number">
+     </div>
+     <div>
+      <label for="product-qty" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Qtà</label><input id="product-qty" min="0" max="4" step="1" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="number">
+     </div>
+     <div class="col-span-2">
+      <label for="product-expiry" class="block text-[10px] font-black uppercase tracking-[.16em] mb-0.5">Scadenza</label><input id="product-expiry" class="focusable w-full bg-white border-2 border-black rounded-lg px-2 py-1.5 font-bold text-xs text-black" type="date">
+     </div>
+     <div class="col-span-2 flex justify-end gap-1.5">
+      <button type="button" class="close-product-modal focusable bg-white border-2 border-black rounded-lg px-2 py-1 font-black uppercase text-[10px]">Annulla</button><button id="save-product-btn" type="submit" class="focusable bg-[#2bc8ee] rounded-lg px-2 py-1 font-black uppercase text-[10px]">Salva</button>
+     </div>
+    </form>
+   </div>
+  </div>
+  <div id="toast" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] bg-[#163329] text-white px-4 py-3 rounded-lg font-bold text-sm"></div>
+<script type="module" src="script.js"></script>
+</body>
+</html>

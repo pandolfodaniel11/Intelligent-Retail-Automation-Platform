@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full">
+<head>
+  <!-- 
+  VENDING MACHINE - INTERACTIVE KIOSK
+
+  Architecture:
+  - Viewport is strictly locked to the physical display 
+    resolution (600x1024) to prevent accidental pinch-to-zoom gestures.
+  - SPA Navigation: Zero-reload screen transitions (.hidden toggles) 
+    ensure instantaneous feedback, crucial for physical retail interactions.
+  - Accessibility: Large touch targets (min 48px) and distinct color 
+    coding for success/error states to guide users in public environments.
+  -->
+  <meta charset="UTF-8">
+  <!-- Lock resolution(600x1024) and disable zoom -->
+  <meta name="viewport" content="width=600, height=1024, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Snack & Drink | Kiosk Interface</title>
+  
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  
+  <!-- Custom Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+  
+  <style>
+
+    html, body { height: 100%; margin: 0; }
+    * { font-family: 'Comic Neue', cursive; user-select: none; /* Previene la selezione del testo sul touch */ }
+    .pop-title { font-family: 'Bangers', cursive; }
+    .pop-font { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+
+    .halftone { background-image: radial-gradient(circle, #000 1px, transparent 1px); background-size: 8px 8px; opacity: 0.05; position: absolute; inset: 0; pointer-events: none; }
+    .pop-shadow { box-shadow: 4px 4px 0px #000; }
+    .pop-border { border: 3px solid #000; }
+    .comic-border { border: 8px solid #000; box-shadow: 12px 12px 0 #000; }
+    .dots-bg { background-color: #FFC8C8; background-image: radial-gradient(#000 2px, transparent 2px); background-size: 15px 15px; }
+    .dots-bg-green { background-color: #B2FF59; background-image: radial-gradient(#000 2px, transparent 2px); background-size: 15px 15px; }
+   
+    .btn-pop { transition: transform 0.1s; }
+    .btn-pop:active { transform: scale(0.95); }
+    
+    .action-badge { background: #000; border: 3px solid #000; color: #fff; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3); }
+    
+    .burst { position: absolute; width: 340px; height: 340px; background: #FFD700; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+    .star-burst { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+    .mini-star { position: absolute; font-size: 24px; opacity: 0.3; animation: popIn 0.8s ease-out forwards; }
+    
+    #custom-modal { backdrop-filter: blur(4px); }
+    .modal-show { display: flex !important; }
+    
+    /* ANIMATIONS */
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    @keyframes popIn { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 50% { transform: scale(1.3) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+    .float-anim { animation: float 3s ease-in-out infinite; }
+    .animate-spin-custom { animation: spin 2s linear infinite; }
+    .animate-pulse-custom { animation: pulse 1.5s infinite; }
+    .anim-pop { animation: popIn 0.7s cubic-bezier(0.68,-0.55,0.265,1.55) both; }
+    .anim-bounce { animation: bounce 1.2s ease-in-out infinite; }
+  </style>
+</head>
+
+<body class="h-full overflow-hidden" style="background: #FFD700;">
+  
+  <div id="app" class="w-full h-full relative">
+    
+
+    <!-- HOME -->
+    <div id="page-home" class="w-full h-full flex flex-col items-center justify-between relative" style="background: #FFD700;">
+      <div class="halftone"></div>
+      <div class="relative z-10 w-full flex justify-end px-4 pt-4">
+        <div class="pop-border pop-shadow rounded-lg px-3 py-2" style="background: #FFF;">
+          <p id="date-time" class="text-xs font-bold" style="color: #000;"></p>
+        </div>
+      </div>
+      
+      <div class="relative z-10 flex flex-col items-center text-center px-6 flex-1 justify-center">
+        <div class="float-anim mb-4">
+          <svg width="100" height="100" viewBox="0 0 120 120">
+            <rect x="10" y="10" width="100" height="100" rx="12" fill="#FF1493" stroke="#000" stroke-width="4" /> 
+            <rect x="25" y="30" width="30" height="50" rx="4" fill="#00BFFF" stroke="#000" stroke-width="2" /> 
+            <rect x="65" y="30" width="30" height="50" rx="4" fill="#7FFF00" stroke="#000" stroke-width="2" /> 
+            <rect x="25" y="85" width="70" height="12" rx="3" fill="#FFD700" stroke="#000" stroke-width="2" />
+          </svg>
+        </div>
+        <h1 id="home-title" class="pop-title text-5xl tracking-wide mb-2" style="color: #FF1493; text-shadow: 3px 3px 0 #000;">SNACK &amp; DRINK</h1>
+        <p id="home-subtitle" class="text-lg font-bold mb-8" style="color: #000;">La tua vending machine preferita!</p>
+        <button id="home-btn" onclick="showPage('products')" class="btn-pop pop-border pop-shadow px-16 py-8 text-4xl font-bold pop-title tracking-wide rounded-2xl" style="background: #FF1493; color: #FFF;">
+          SCEGLI IL TUO SNACK!
+        </button>
+      </div>
+      
+      <div class="absolute top-20 left-8 z-0 text-4xl rotate-12">⭐</div>
+      <div class="absolute top-40 right-12 z-0 text-5xl -rotate-12">🍭</div>
+      <div class="absolute bottom-32 left-12 z-0 text-4xl rotate-45">🌟</div>
+      <div class="absolute bottom-20 right-8 z-0 text-5xl -rotate-45">🍬</div>
+    </div>
+
+    <!-- PRODUCT LIST -->
+    <div id="page-products" class="w-full h-full flex flex-col hidden" style="background: #00BFFF;">
+      <div class="halftone"></div>
+      <header class="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
+        <div class="flex items-center gap-2 w-12">
+          <button onclick="showPage('home')" class="btn-pop pop-border pop-shadow p-2 rounded-lg" style="background: #FFD700;">
+            <i data-lucide="home" style="width:24px;height:24px;"></i>
+          </button>
+        </div>
+        <h2 class="pop-title text-3xl" style="color: #FFF; text-shadow: 2px 2px 0 #000;">PRODOTTI</h2>
+        <div class="w-12"></div>
+      </header>
+      <div id="products-grid" class="relative z-10 grid grid-cols-2 gap-4 px-4 pb-6 pt-2 overflow-auto flex-1"></div>
+    </div>
+
+    <!-- PRODUCT DETAIL & QUANTITY -->
+    <div id="page-detail" class="w-full h-full flex flex-col hidden" style="background: #FF1493;">
+      <div class="halftone"></div>
+      <header class="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
+        <div class="flex items-center gap-2 w-12">
+          <button onclick="showPage('products')" class="btn-pop pop-border pop-shadow p-2 rounded-lg" style="background: #FFD700;">
+            <i data-lucide="arrow-left" style="width:24px;height:24px;"></i>
+          </button> 
+          <button onclick="showPage('home')" class="btn-pop pop-border pop-shadow p-2 rounded-lg" style="background: #FFD700;">
+            <i data-lucide="home" style="width:24px;height:24px;"></i>
+          </button>
+        </div>
+        <h2 class="pop-title text-3xl" style="color: #FFF; text-shadow: 2px 2px 0 #000;">DETTAGLI</h2>
+        <div class="w-12"></div>
+      </header>
+      
+      <div class="relative z-10 flex flex-col items-center px-6 pt-6 flex-1 justify-center">
+        <div class="text-center mb-8">
+          <div id="detail-image" class="pop-border pop-shadow rounded-lg w-24 h-24 flex items-center justify-center mb-3" style="background: #FFF; margin: 0 auto;"></div>
+          <h3 id="detail-name" class="pop-title text-lg" style="color: #FFF;"></h3>
+          <p id="detail-price" class="text-sm font-bold" style="color: #FFF;"></p>
+        </div>
+        
+        <div class="pop-border pop-shadow rounded-2xl p-6 w-full text-center mb-6" style="background: #FFF;">
+          <p class="text-2xl font-bold mb-4" style="color: #000;">Quantità:</p>
+          <div class="flex items-center justify-center gap-4">
+            <button onclick="decreaseQuantity()" class="btn-pop pop-border pop-shadow px-4 py-2 text-3xl font-bold rounded-lg" style="background: #7FFF00; color: #000;">−</button> 
+            <span id="quantity-display" class="pop-title text-5xl" style="color: #7FFF00;">1</span> 
+            <button onclick="increaseQuantity()" class="btn-pop pop-border pop-shadow px-4 py-2 text-3xl font-bold rounded-lg" style="background: #7FFF00; color: #000;">+</button>
+          </div>
+        </div>
+        <button onclick="proceedToPayment()" class="btn-pop pop-border pop-shadow w-full py-4 rounded-xl text-2xl font-bold pop-title" style="background: #00BFFF; color: #000;">PROCEDI AL PAGAMENTO</button>
+      </div>
+    </div>
+
+    <!-- PAYMENT SELECTION -->
+    <div id="page-payment" class="w-full h-full flex flex-col hidden" style="background: #7FFF00;">
+      <div class="halftone"></div>
+      <header class="relative z-10 flex items-center justify-between px-4 pt-4 pb-2">
+        <div class="flex items-center gap-2 w-12">
+          <button onclick="showPage('detail')" class="btn-pop pop-border pop-shadow p-2 rounded-lg" style="background: #FFD700;">
+            <i data-lucide="arrow-left" style="width:24px;height:24px;"></i>
+          </button> 
+          <button onclick="showPage('home')" class="btn-pop pop-border pop-shadow p-2 rounded-lg" style="background: #FFD700;">
+            <i data-lucide="home" style="width:24px;height:24px;"></i>
+          </button>
+        </div>
+        <div class="w-12"></div>
+      </header>
+      
+      <div class="relative z-10 flex flex-col items-center px-6 flex-1 justify-center gap-4">
+        <div class="text-center w-full pop-border pop-shadow rounded-2xl p-8" style="background: #FFF; min-height: 300px; display: flex; flex-direction: column; justify-content: center;">
+          <div id="payment-image" class="flex items-center justify-center mb-3" style="height: 100px;"></div>
+          <h3 id="payment-name" class="pop-title text-xl mb-2" style="color: #000;"></h3>
+          <p id="payment-qty" class="text-lg font-bold mb-3" style="color: #000;"></p>
+          <p id="payment-total" class="pop-title text-3xl" style="color: #7FFF00;"></p>
+        </div>
+        <p id="payment-msg" class="text-center font-bold text-lg" style="color: #000;"></p>
+        <div class="flex gap-4 w-full">
+          <button onclick="processCashPayment()" class="btn-pop pop-border pop-shadow flex-1 py-4 rounded-xl text-xl font-bold pop-title" style="background: #7FFF00; color: #000;">💵 CONTANTI</button>
+          <button onclick="processCardPayment()" class="btn-pop pop-border pop-shadow flex-1 py-4 rounded-xl text-xl font-bold pop-title" style="background: #00BFFF; color: #000;">💳 CARTA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD PROMPT -->
+    <div id="page-card-prompt" class="w-full h-full flex flex-col hidden" style="background: #00BFFF;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-8 text-center">
+        <div class="text-8xl mb-4 float-anim">💳</div>
+        <h1 class="pop-title text-4xl" style="color: #FFF; text-shadow: 3px 3px 0 #000;">APPOGGIA LA CARTA</h1>
+        <p class="text-2xl font-bold" style="color: #FFF;">al terminale di pagamento</p>
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full" style="background: #FFF;">
+          <p class="text-4xl mb-4">🔘</p>
+          <p class="text-lg font-bold" style="color: #000;">Attendere il riconoscimento...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD PROCESSING -->
+    <div id="page-card-processing" class="w-full h-full flex flex-col hidden" style="background: #00BFFF;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-6 text-center">
+        <div class="text-8xl mb-4 animate-spin-custom">💳</div>
+        <h1 class="pop-title text-4xl" style="color: #FFF; text-shadow: 3px 3px 0 #000;">ATTENDERE...</h1>
+        <p class="text-xl font-bold" style="color: #FFF;">Elaborazione pagamento con carta</p>
+        
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full" style="background: #FFF;">
+          <div class="flex justify-center gap-4 mb-4">
+            <span class="text-4xl animate-pulse-custom" style="color: #00BFFF;">●</span>
+            <span class="text-4xl animate-pulse-custom" style="color: #FF1493; animation-delay: 0.2s;">●</span>
+            <span class="text-4xl animate-pulse-custom" style="color: #7FFF00; animation-delay: 0.4s;">●</span>
+          </div>
+          <p class="text-lg font-bold" style="color: #000;">Stiamo comunicando con la tua banca...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREDIT DISPLAY -->
+    <div id="page-credit" class="w-full h-full flex flex-col hidden" style="background: #FF1493;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-8">
+        <h1 class="pop-title text-4xl text-center" style="color: #FFF; text-shadow: 2px 2px 0 #000;">INSERISCI CREDITO</h1>
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full text-center" style="background: #7FFF00;">
+          <p class="pop-title text-2xl mb-4" style="color: #000;">💰 CREDITO</p>
+          <span id="credit-display-full" class="pop-title text-7xl" style="color: #FF1493;">€0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COINS PROMPT -->
+    <div id="page-coins-prompt" class="w-full h-full flex flex-col hidden" style="background: #FFD700;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-8 text-center">
+        <div class="text-8xl mb-4 float-anim">🪙</div>
+        <h1 class="pop-title text-4xl" style="color: #000; text-shadow: 3px 3px 0 #FFF;">INSERISCI LE MONETE</h1>
+        <p class="text-2xl font-bold" style="color: #000;">nel terminale di pagamento</p>
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full" style="background: #FFF; border-width: 5px;">
+          <p class="text-6xl mb-4">💰</p>
+          <p class="text-lg font-bold" style="color: #000;">Attendere il riconoscimento...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- COINS PROCESSING -->
+    <div id="page-coins-processing" class="w-full h-full flex flex-col hidden" style="background: #FFD700;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-6 text-center">
+        <div class="text-8xl mb-4 animate-spin-custom">🪙</div>
+        <h1 class="pop-title text-4xl" style="color: #000; text-shadow: 3px 3px 0 #FFF;">ATTENDERE...</h1>
+        <p class="text-xl font-bold" style="color: #000;">Elaborazione pagamento con monete</p>
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full" style="background: #FFF; border-width: 5px;">
+          <div class="flex justify-center gap-2 mb-4">
+            <span class="text-4xl animate-pulse-custom" style="color: #FFD700;">●</span>
+            <span class="text-4xl animate-pulse-custom" style="color: #FFD700; animation-delay: 0.2s;">●</span>
+            <span class="text-4xl animate-pulse-custom" style="color: #FFD700; animation-delay: 0.4s;">●</span>
+          </div>
+          <p class="text-lg font-bold" style="color: #000;">Stiamo elaborando il tuo pagamento...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT SUCCESS -->
+    <div id="page-payment-success" class="w-full h-full hidden dots-bg-green flex-col items-center justify-center relative overflow-hidden">
+      <div class="star-burst" id="stars-success"></div>
+      <div class="relative flex flex-col items-center z-10">
+        <div class="burst opacity-40 anim-bounce" style="top:-80px;left:50%;transform:translateX(-50%);background:#00E676;"></div>
+        <div class="anim-pop text-[140px] leading-none relative z-20">🎉</div>
+        <div class="comic-border bg-white rounded-3xl px-10 py-7 mt-6 max-w-lg mx-4 anim-pop">
+          <p class="pop-font text-4xl text-center text-green-600">PAGAMENTO RIUSCITO</p>
+        </div>
+        <div class="mt-8 action-badge bg-green-500 border-green-700 anim-pop">
+          <span class="pop-font text-2xl">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT FAILED -->
+    <div id="page-payment-failed" class="w-full h-full hidden dots-bg flex-col items-center justify-center relative overflow-hidden">
+      <div class="star-burst" id="stars-failed"></div>
+      <div class="relative flex flex-col items-center z-10">
+        <div class="burst opacity-40 anim-bounce" style="top:-80px;left:50%;transform:translateX(-50%);"></div>
+        <div class="anim-pop text-[140px] leading-none relative z-20">💥</div>
+        <div class="comic-border bg-white rounded-3xl px-10 py-7 mt-6 max-w-md mx-4 anim-pop">
+          <p class="pop-font text-4xl text-center text-red-600">PAGAMENTO FALLITO</p>
+        </div>
+        <div class="mt-8 action-badge bg-red-600 border-red-800 anim-pop">
+          <span class="pop-font text-2xl">✗</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- THANK YOU -->
+    <div id="page-thankyou" class="w-full h-full flex flex-col hidden overflow-hidden" 
+         style="background: linear-gradient(45deg, #FF1493 0%, #FFD700 25%, #00BFFF 50%, #7FFF00 75%, #FF1493 100%); background-size: 400% 400%; animation: gradientShift 3s ease infinite;">
+      <div class="halftone"></div>
+      <div class="relative z-10 flex flex-col items-center px-6 pt-12 flex-1 justify-center gap-6 text-center">
+        <div class="text-8xl mb-4">🎉</div>
+        <h1 class="pop-title text-5xl" style="color: #FF1493; text-shadow: 3px 3px 0 #000;">GRAZIE!</h1>
+        <p class="pop-title text-2xl" style="color: #000;">Per il tuo acquisto</p>
+        <div class="pop-border pop-shadow rounded-3xl p-8 w-full" style="background: #FFF;">
+          <p class="text-xl font-bold mb-4" style="color: #000;">Torna a trovarci presto!</p>
+          <p class="text-lg" style="color: #FF1493;">I migliori snack aspettano solo te!</p>
+        </div>
+        <p id="thankyou-timer" class="text-lg font-bold" style="color: #000;"></p>
+      </div>
+    </div>
+
+  </div>
+  
+  <script type="module" src="script.js"></script>
+
+
+  <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative z-10 pop-border pop-shadow rounded-3xl p-8 text-center max-w-sm mx-4 anim-pop" style="background: #FFF;">
+      <div id="modal-icon" class="text-6xl mb-4">⚠️</div>
+      <h2 id="modal-title" class="pop-title text-2xl mb-2"></h2>
+      <p id="modal-text" class="text-lg font-bold mb-6"></p>
+      <button onclick="closeModal()" class="btn-pop pop-border pop-shadow px-8 py-3 rounded-xl pop-title text-xl" style="background:#FFD700;">
+        OK
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>
