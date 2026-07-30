@@ -191,7 +191,7 @@ This is the board that acts as the financial controller. It manages NFC card rea
 * The 3D printed coin sorting and distribution mechanism design is based on the [Munt-sorteer--en-opslagsysteem](https://github.com/TiebeDeclercq/Munt-sorteer--en-opslagsysteem/tree/main) by TiebeDeclercq.
 
 ## License
-This project is licensed under the MIT License.
+* This project is licensed under the MIT License.
 
 ## Authors
 * Daniel Pandolfo - Carlotta Caruso
