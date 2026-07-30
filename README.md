@@ -92,7 +92,7 @@ graph LR
     %% 1. MOTOR NODE (Uses only 12V)
     %% --------------------------------
     subgraph "Motor Node"
-        ESP2[ESP32 Motor]
+        ESP2[ESP32 Motor Board]
         RLY_M[Relay Module]
         M1[6x 12V DC Motors]
     end
@@ -106,8 +106,8 @@ graph LR
     %% --------------------------------
     %% 2. PAYMENT NODE (Uses 12V, 5V, 3.3V)
     %% --------------------------------
-    subgraph "Payment & Sensor Node"
-        ESP3[ESP32 Payment]
+    subgraph "Payment Node"
+        ESP3[ESP32 Payment Board]
         SRV[6x Servo Motors]
         RLY_P[Power Control Relay]
         NFC[NFC Reader]
@@ -128,7 +128,7 @@ graph LR
     %% 3. DISPLAY NODE (Uses 12V, 3.3V)
     %% --------------------------------
     subgraph "Display Node"
-        ESP1[ESP32 Display]
+        ESP1[ESP32 Display Board]
         MUX[I2C Multiplexer]
         OLED[6x OLED Displays]
     end
