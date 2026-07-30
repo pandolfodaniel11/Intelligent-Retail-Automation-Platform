@@ -1,0 +1,61 @@
+{
+  "display": {
+    "prodotto1": 0,
+    "prodotto2": 0,
+    "prodotto3": 0,
+    "prodotto4": 0,
+    "prodotto5": 0,
+    "prodotto6": 0
+  },
+  "motore": 0,
+  "percorso": {
+    "inc": 0,
+    "prezzo": 0,
+    "stato_nfc": 0,
+    "totale_inc": 0
+  },
+  "prezzo": 0,
+  "prodotti": {
+    "prodotto1": {
+      "expiry1": "2026-08-22",
+      "nome1": "product1_name",
+      "prezzo1": 0,
+      "quantita1": 0
+    },
+    "prodotto2": {
+      "expiry2": "2026-10-23",
+      "nome2": "product2_name",
+      "prezzo2": 0,
+      "quantita2": 0
+    },
+    "prodotto3": {
+      "expiry3": "2026-08-21",
+      "nome3": "product3_name",
+      "prezzo3": 0,
+      "quantita3": 0
+    },
+    "prodotto4": {
+      "expiry4": "2026-07-18",
+      "nome4": "product4_name",
+      "prezzo4": 0,
+      "quantita4": 0
+    },
+    "prodotto5": {
+      "expiry5": "2026-08-22",
+      "nome5": "product5_name",
+      "prezzo5": 0,
+      "quantita5": 0
+    },
+    "prodotto6": {
+      "expiry6": "2026-09-01",
+      "nome6": "product6_name",
+      "prezzo6": 0,
+      "quantita6": 0
+    }
+  },
+  "quantita": 0,
+  "saldo": 0,
+  "test": {
+    "messaggio": "Connessione riuscita"
+  }
+}
