@@ -76,60 +76,68 @@ This project uses a **Cloud-Native Distributed Architecture**. Instead of relyin
 ### High-Level Block Diagram
 
 ```mermaid
-graph TD
-    subgraph Cloud
-        FB[(Firebase Realtime Database)]
+graph LR
+    %% POWER SUPPLY (Left Side)
+    BAT[12V Main Battery]
+    B5[5V Buck Converter]
+    B3[3.3V Buck Converter]
+
+    BAT --> B5
+    BAT --> B3
+
+    %% CLOUD (Right Side)
+    FB[(Firebase Realtime DB)]
+
+    %% --------------------------------
+    %% 1. MOTOR NODE (Uses only 12V)
+    %% --------------------------------
+    subgraph "Motor Node"
+        ESP2[ESP32 Motor]
+        RLY_M[Relay Module]
+        M1[6x 12V DC Motors]
     end
 
-    subgraph Power Supply
-        BAT[12V Main Battery]
-        B5[Buck Converter 5V]
-        B3[Buck Converter 3.3V]
-        
-        BAT --> B5
-        BAT --> B3
-    end
-
-    subgraph ESP32_1 [ESP32: Display Node]
-        MUX[I2C Multiplexer] --> O1[6x OLED Displays]
-    end
-
-    subgraph ESP32_2 [ESP32: Motor Node]
-        RLY_M[6-Channel Relay Module] --> M1[6x 12V DC Motors]
-        VD[6x Voltage Dividers]
-    end
-
-    subgraph ESP32_3 [ESP32: Payment & Sensor Node]
-        RLY_P[Power Control Relay]
-        NFC[NFC Reader MFRC522]
-        IR[6x IR Drop Sensors]
-        SRV[6x Servo Motors]
-    end
-
-    %% Data / Logic Connections
-    ESP32_1 <-->|Wi-Fi| FB
-    ESP32_2 <-->|Wi-Fi| FB
-    ESP32_3 <-->|Wi-Fi| FB
-    
-    %% 12V Direct Power Routing
-    BAT -.->|12V| ESP32_1
-    BAT -.->|12V| ESP32_2
-    BAT -.->|12V| ESP32_3
-    BAT -.->|12V| M1
+    BAT -.->|12V| ESP2
     BAT -.->|12V| RLY_M
-    BAT -.->|12V| RLY_P
+    RLY_M -->|12V Switched| M1
     
-    %% 5V Power Routing
+    ESP2 <-->|Wi-Fi| FB
+
+    %% --------------------------------
+    %% 2. PAYMENT NODE (Uses 12V, 5V, 3.3V)
+    %% --------------------------------
+    subgraph "Payment & Sensor Node"
+        ESP3[ESP32 Payment]
+        SRV[6x Servo Motors]
+        RLY_P[Power Control Relay]
+        NFC[NFC Reader]
+        IR[6x IR Sensors]
+    end
+
+    BAT -.->|12V| ESP3
     B5 -.->|5V| SRV
     
-    %% 3.3V Power Routing (Always On)
-    B3 -.->|3.3V| O1
-    B3 -.->|3.3V| MUX
+    BAT -.->|12V Control| RLY_P
+    B3 -.->|3.3V Input| RLY_P
+    RLY_P -->|3.3V Switched| NFC
+    RLY_P -->|3.3V Switched| IR
     
-    %% 3.3V Power Routing (Switched via Relay)
-    B3 -.->|3.3V| RLY_P
-    RLY_P -.->|3.3V Switched| NFC
-    RLY_P -.->|3.3V Switched| IR
+    ESP3 <-->|Wi-Fi| FB
+
+    %% --------------------------------
+    %% 3. DISPLAY NODE (Uses 12V, 3.3V)
+    %% --------------------------------
+    subgraph "Display Node"
+        ESP1[ESP32 Display]
+        MUX[I2C Multiplexer]
+        OLED[6x OLED Displays]
+    end
+
+    BAT -.->|12V| ESP1
+    B3 -.->|3.3V| MUX
+    B3 -.->|3.3V| OLED
+
+    ESP1 <-->|Wi-Fi| FB
 ```
 
 ## Running the Project
