@@ -100,10 +100,10 @@ graph TD
     end
 
     subgraph ESP32_3 [ESP32: Payment & Sensor Node]
+        RLY_P[Power Control Relay]
         NFC[NFC Reader MFRC522]
         IR[6x IR Drop Sensors]
         SRV[6x Servo Motors]
-        RLY_P[Power Control Relay]
     end
 
     %% Data / Logic Connections
@@ -122,11 +122,14 @@ graph TD
     %% 5V Power Routing
     B5 -.->|5V| SRV
     
-    %% 3.3V Power Routing
+    %% 3.3V Power Routing (Always On)
     B3 -.->|3.3V| O1
     B3 -.->|3.3V| MUX
-    B3 -.->|3.3V| NFC
-    B3 -.->|3.3V| IR
+    
+    %% 3.3V Power Routing (Switched via Relay)
+    B3 -.->|3.3V| RLY_P
+    RLY_P -.->|3.3V Switched| NFC
+    RLY_P -.->|3.3V Switched| IR
 ```
 
 ## Running the Project
