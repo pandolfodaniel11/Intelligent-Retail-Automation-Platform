@@ -81,9 +81,13 @@ graph TD
         FB[(Firebase Realtime Database)]
     end
 
-    subgraph Power Management
+    subgraph Power Supply
+        BAT[12V Main Battery]
         B5[Buck Converter 5V]
         B3[Buck Converter 3.3V]
+        
+        BAT --> B5
+        BAT --> B3
     end
 
     subgraph ESP32_1 [ESP32: Display Node]
@@ -91,7 +95,7 @@ graph TD
     end
 
     subgraph ESP32_2 [ESP32: Motor Node]
-        M1[6x DC Motors]
+        RLY_M[6-Channel Relay Module] --> M1[6x 12V DC Motors]
         VD[6x Voltage Dividers]
     end
 
@@ -99,16 +103,30 @@ graph TD
         NFC[NFC Reader MFRC522]
         IR[6x IR Drop Sensors]
         SRV[6x Servo Motors]
-        RLY[Control Relay]
+        RLY_P[Power Control Relay]
     end
 
+    %% Data / Logic Connections
     ESP32_1 <-->|Wi-Fi| FB
     ESP32_2 <-->|Wi-Fi| FB
     ESP32_3 <-->|Wi-Fi| FB
     
-    B5 -.-> ESP32_1
-    B5 -.-> ESP32_2
-    B5 -.-> ESP32_3
+    %% 12V Direct Power Routing
+    BAT -.->|12V| ESP32_1
+    BAT -.->|12V| ESP32_2
+    BAT -.->|12V| ESP32_3
+    BAT -.->|12V| M1
+    BAT -.->|12V| RLY_M
+    BAT -.->|12V| RLY_P
+    
+    %% 5V Power Routing
+    B5 -.->|5V| SRV
+    
+    %% 3.3V Power Routing
+    B3 -.->|3.3V| O1
+    B3 -.->|3.3V| MUX
+    B3 -.->|3.3V| NFC
+    B3 -.->|3.3V| IR
 ```
 
 ## Running the Project
